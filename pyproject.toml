@@ -1,0 +1,30 @@
+[project]
+name = "population-explorer"
+version = "2.0.0"
+description = "Place profiles built on the published Gridded EIF aggregates"
+requires-python = ">=3.11"
+dependencies = [
+  "pyyaml>=6.0",
+  "duckdb>=1.1",
+  "pyarrow>=17",
+]
+
+[project.scripts]
+explorer = "pipeline.cli:main"
+explorer-publish = "pipeline.publish:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+publish = ["boto3>=1.34"]
+# tools/build_hero.py only; the build itself does not need them.
+hero = ["pillow>=10", "numpy>=1.26"]
+
+[tool.setuptools.packages.find]
+include = ["pipeline*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

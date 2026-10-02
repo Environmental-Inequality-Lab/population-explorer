@@ -1,0 +1,52 @@
+name: Build and publish
+
+# Manual for now. Once the data refresh cadence is settled this can move to a
+# schedule, but a 4,000-page rebuild should not fire on every commit.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'pipeline/**'
+      - 'catalog/**'
+      - 'assets/**'
+
+permissions:
+  id-token: write      # OIDC: no long-lived AWS keys in the repo
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false   # never interrupt a half-finished upload
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install -e '.[dev]' boto3
+
+      - name: Tests
+        run: pytest -q
+
+      # The site is derived entirely from published upstream artifacts, so a
+      # build that cannot reach them is a failed build, not a stale one.
+      - name: Build
+        run: python -m pipeline.cli build --all
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Publish
+        env:
+          EXPLORER_BUCKET: eil-population-explorer
+          EXPLORER_DISTRIBUTION_ID: ${{ secrets.EXPLORER_DISTRIBUTION_ID }}
+        run: python -m pipeline.publish

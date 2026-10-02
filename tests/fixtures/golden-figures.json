@@ -1,0 +1,695 @@
+{
+  "$schema_version": 2,
+  "generated_at": "2026-09-07T19:58:30Z",
+  "generated_by": "tools/build_golden_fixture.py",
+  "purpose": "Verified figures for the Population Explorer rebuild. A later phase that produces different numbers has a bug, not a difference of opinion.",
+  "provenance": {
+    "source": "gridded-eif derived v1 aggregates",
+    "derived_root": "https://d2l6ob0rkxsi9o.cloudfront.net/derived/v1",
+    "measure": "n_noise_postprocessed unless stated",
+    "headline_year": 2025,
+    "headline_policy": "latest",
+    "catalog_url": "https://d2l6ob0rkxsi9o.cloudfront.net/catalog.json",
+    "upstream_pipeline_version": "1.0.0",
+    "upstream_registry_version": "1.0.0",
+    "upstream_derived_version": "v1",
+    "catalog_generated_at": "2026-08-28T18:51:31+00:00",
+    "preliminary_years": [
+      2025
+    ],
+    "note": "Upstream versions are recorded because a MAJOR pipeline bump rebuilds every partition and moves these numbers slightly. When that happens the fixture is supposed to fail; re-baseline deliberately, never by reflex."
+  },
+  "conventions": {
+    "measure": {
+      "rule": "n_noise_postprocessed, in every year and every geography",
+      "why": "The source guide recommends the raw measure above 600,000 population and post-processed below. Applying that literally makes a geography switch estimator as it crosses the threshold, putting a step change into a 25-year trend line. Above 600k the two measures differ by a median 0.7% at cell level, so the switch buys almost nothing; meanwhile raw is negative in 2.86% of county cells and this is a public-facing product. Both measures ship in every download; raw drives the uncertainty band.",
+      "deviation_from_source_guide": true
+    },
+    "age_shares": {
+      "rule": "denominator includes 'Missing Age'; the residual is displayed as its own category",
+      "why": "Displayed shares must sum to 100%. The old pipeline used this same denominator but hid the residual, so its age shares summed to ~97% with nothing on the page explaining the gap.",
+      "residual_category": "Missing Age"
+    },
+    "race_shares": {
+      "rule": "denominator includes 'Other/Unknown'; the residual is displayed as its own category",
+      "why": "Other/Unknown is a median 11.8% of population in large counties and varies from 4.6% to 22% across counties. The old pipeline divided by the full denominator and then dropped the residual from display, so Arlington's shares summed to 77.9% against a national 87.4% \u2014 which inverted the published county-vs-nation comparison for White population.",
+      "residual_category": "Other/Unknown"
+    },
+    "income_decile_shares": {
+      "rule": "shares over deciles 1-10 only, denominator stated as residents with an income record; decile 0 reported separately as coverage, never as a bar",
+      "why": "The one dimension where the residual is NOT folded into the denominator, because it is not the same kind of residual. Missing Age and Other/Unknown are members of a partition of the POPULATION \u2014 the person is there, the value is unknown. Deciles partition the INCOME DISTRIBUTION into ten equal-count groups, and decile 0 is not an eleventh decile; it is outside that universe. Rendering it as an eleventh bar breaks the 10% reference line that makes the chart legible at all.",
+      "excluded_from_shares": "0",
+      "denominator_universe": "residents with an income record",
+      "what_the_old_site_got_right": "The published explorer excluded decile 0 from every income figure (02_generate_county_figures.R:140,155 and 01_generate_county_stats.R:434) and drew a 10% even-distribution reference line, which only reads correctly over ten deciles. That choice was sound.",
+      "what_it_got_wrong": "It never disclosed the exclusion. Nothing on the page said the denominator was not everybody, so a reader had no way to know how many residents were outside it \u2014 between 0.02% and 0.40% nationally by year, and up to 3.49% in a single county.",
+      "stability_across_years": "Excluding a fixed CATEGORY would change the universe between years, since decile 0 is absent from the 2024 source and its residents sit inside deciles 1-10 that year. Excluding on a stated DEFINITION does not: 'residents with an income record' means the same thing in every year, and 2024 is simply a year in which the source records one for everybody. Coverage is published per year so the shift is visible.",
+      "note": "Both catalog/variables.yaml and the pinned source contract in gridded-eif declare decile 0 a valid category, which is correct. Its validator treats an absent contract category as a warning, and CI pins validate-source to 2022, so the 2024 gap is not currently surfaced anywhere upstream."
+    },
+    "growth": {
+      "rule": "CAGR = (value[2025] / value[2000]) ** (1 / 25) - 1",
+      "why": "One formula, used everywhere. The old pipeline used three different conventions in a single script, one of which raised to 1/GROWTH_YEARS over a span of GROWTH_YEARS+1 years. The exponent is always the number of intervals, never the number of observations.",
+      "base_year_excludes_1999": "1999 is excluded from the source registry entirely: administrative completeness is ~70% against 85-96% for every later year. The old pipeline's income CAGRs used first(year), which was 1999."
+    },
+    "preliminary_years": {
+      "rule": "the headline year is the latest available, preliminary or not",
+      "why": "2025 is flagged preliminary upstream and is used anyway. The explorer's job is to describe a place now, and holding the headline back a year for a distinction most readers cannot act on makes every page stale. The registry records this as `vintages.headline: latest`; switching to `latest_final` is one line and the resolver follows it.",
+      "recorded_not_hidden": "Which years upstream considers preliminary stays in provenance, so a reader of this fixture can always tell which vintage a figure came from."
+    }
+  },
+  "national": {
+    "population": {
+      "total_by_year": {
+        "2000": 244934066.0,
+        "2010": 286018383.0,
+        "2020": 319900928.9,
+        "2024": 324443178.7,
+        "2025": 335290010.2
+      },
+      "cagr_2000_2025": 0.012639,
+      "measure_comparison_2025": {
+        "postprocessed": 335290010.2,
+        "raw": 335290085.0,
+        "pct_difference": -0.0
+      }
+    },
+    "age_shares_2025": {
+      "denominator": 335290010.2,
+      "denominator_universe": "all residents",
+      "categories": {
+        "19-65": {
+          "population": 207222653.1,
+          "share_pct": 61.804
+        },
+        "Missing Age": {
+          "population": 5575748.5,
+          "share_pct": 1.663
+        },
+        "Over 65": {
+          "population": 58953396.1,
+          "share_pct": 17.583
+        },
+        "Under 18": {
+          "population": 63538212.5,
+          "share_pct": 18.95
+        }
+      },
+      "shares_sum_to_pct": 100.0
+    },
+    "race_shares_2025": {
+      "denominator": 335290010.2,
+      "denominator_universe": "all residents",
+      "categories": {
+        "AIAN": {
+          "population": 2874844.3,
+          "share_pct": 0.857
+        },
+        "Asian": {
+          "population": 17133145.0,
+          "share_pct": 5.11
+        },
+        "Black": {
+          "population": 40262219.0,
+          "share_pct": 12.008
+        },
+        "Hispanic": {
+          "population": 55564617.0,
+          "share_pct": 16.572
+        },
+        "Other/Unknown": {
+          "population": 35180171.4,
+          "share_pct": 10.492
+        },
+        "White": {
+          "population": 184275013.6,
+          "share_pct": 54.96
+        }
+      },
+      "shares_sum_to_pct": 99.999
+    },
+    "income_decile_shares_2025": {
+      "denominator": 335041774.1,
+      "denominator_universe": "residents with an income record",
+      "categories": {
+        "1": {
+          "population": 33176848.8,
+          "share_pct": 9.902
+        },
+        "10": {
+          "population": 33484571.7,
+          "share_pct": 9.994
+        },
+        "2": {
+          "population": 33726262.9,
+          "share_pct": 10.066
+        },
+        "3": {
+          "population": 33678206.9,
+          "share_pct": 10.052
+        },
+        "4": {
+          "population": 33627484.4,
+          "share_pct": 10.037
+        },
+        "5": {
+          "population": 33552042.2,
+          "share_pct": 10.014
+        },
+        "6": {
+          "population": 33493212.9,
+          "share_pct": 9.997
+        },
+        "7": {
+          "population": 33450125.3,
+          "share_pct": 9.984
+        },
+        "8": {
+          "population": 33422040.9,
+          "share_pct": 9.975
+        },
+        "9": {
+          "population": 33430978.2,
+          "share_pct": 9.978
+        }
+      },
+      "shares_sum_to_pct": 99.999,
+      "coverage": {
+        "excluded_category": "0",
+        "all_residents": 335278919.3,
+        "excluded_population": 237145.2,
+        "excluded_pct_of_all_residents": 0.0707,
+        "note": "Shares are of residents with an income record. The remainder have no income record and are outside the decile universe \u2014 they are counted in the population figures elsewhere on the page."
+      }
+    },
+    "decile_zero": {
+      "years_covered": [
+        2000,
+        2025
+      ],
+      "present_in_years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2025
+      ],
+      "absent_in_years": [
+        2024
+      ],
+      "isolated_gaps": [
+        2024
+      ],
+      "isolated_gaps_note": "An absent year bracketed on both sides by years in which the category exists. A gap of this shape is an anomaly in one vintage, not a change in methodology \u2014 which is why decile 0 stays in the denominator.",
+      "national_pct_by_year": {
+        "2000": 0.142,
+        "2001": 0.0894,
+        "2002": 0.0965,
+        "2003": 0.0994,
+        "2004": 0.104,
+        "2005": 0.0998,
+        "2006": 0.1086,
+        "2007": 0.0824,
+        "2008": 0.0152,
+        "2009": 0.3093,
+        "2010": 0.315,
+        "2011": 0.3564,
+        "2012": 0.2956,
+        "2013": 0.3291,
+        "2014": 0.4027,
+        "2015": 0.3745,
+        "2016": 0.312,
+        "2017": 0.241,
+        "2018": 0.2066,
+        "2019": 0.1528,
+        "2020": 0.0964,
+        "2021": 0.0939,
+        "2022": 0.1036,
+        "2023": 0.1157,
+        "2024": null,
+        "2025": 0.0707
+      }
+    },
+    "tabulation_agreement": {
+      "note": "raceincome total minus ageracesex total, by year, as a percent of the ageracesex total. Expressed as a percent so the bound means the same thing in every year and at every scale.",
+      "gap_by_year": {
+        "2000": 10480.5,
+        "2001": -8723.5,
+        "2002": -10035.5,
+        "2003": -17772.0,
+        "2004": 16973.5,
+        "2005": -13842.3,
+        "2006": -2569.4,
+        "2007": -14855.8,
+        "2008": 5816.1,
+        "2009": 1364.6,
+        "2010": 7333.7,
+        "2011": -11262.2,
+        "2012": 28014.3,
+        "2013": 3378.3,
+        "2014": -10278.8,
+        "2015": 7319.0,
+        "2016": -2994.2,
+        "2017": 8712.3,
+        "2018": -21030.3,
+        "2019": -1095.2,
+        "2020": 14167.0,
+        "2021": -18939.2,
+        "2022": 4098.9,
+        "2023": 14953.9,
+        "2024": 18342.0,
+        "2025": -11090.9
+      },
+      "gap_pct_by_year": {
+        "2000": 0.0043,
+        "2001": -0.0036,
+        "2002": -0.0041,
+        "2003": -0.0072,
+        "2004": 0.0068,
+        "2005": -0.0055,
+        "2006": -0.001,
+        "2007": -0.0056,
+        "2008": 0.0021,
+        "2009": 0.0005,
+        "2010": 0.0026,
+        "2011": -0.0039,
+        "2012": 0.0094,
+        "2013": 0.0012,
+        "2014": -0.0035,
+        "2015": 0.0024,
+        "2016": -0.001,
+        "2017": 0.0028,
+        "2018": -0.0067,
+        "2019": -0.0003,
+        "2020": 0.0044,
+        "2021": -0.006,
+        "2022": 0.0013,
+        "2023": 0.0047,
+        "2024": 0.0057,
+        "2025": -0.0033
+      },
+      "max_abs_gap_pct": 0.0094
+    }
+  },
+  "counties": {
+    "06037": {
+      "name": "Los Angeles County, California",
+      "why_this_one": "Largest county in the US and far above the 600k threshold where the source guide recommends the raw measure. Pins the decision to publish post-processed everywhere rather than switching estimator mid-series.",
+      "population": {
+        "total_by_year": {
+          "2000": 8302932.4,
+          "2010": 9110392.8,
+          "2020": 9974389.5,
+          "2024": 9629116.0,
+          "2025": 9953285.1
+        },
+        "cagr_2000_2025": 0.007278,
+        "measure_comparison_2025": {
+          "postprocessed": 9953285.1,
+          "raw": 9955354.0,
+          "pct_difference": -0.0208
+        }
+      },
+      "age_shares_2025": {
+        "denominator": 9953285.1,
+        "denominator_universe": "all residents",
+        "categories": {
+          "19-65": {
+            "population": 6257754.1,
+            "share_pct": 62.871
+          },
+          "Missing Age": {
+            "population": 428554.6,
+            "share_pct": 4.306
+          },
+          "Over 65": {
+            "population": 1627564.4,
+            "share_pct": 16.352
+          },
+          "Under 18": {
+            "population": 1639412.0,
+            "share_pct": 16.471
+          }
+        },
+        "shares_sum_to_pct": 100.0
+      },
+      "race_shares_2025": {
+        "denominator": 9953285.1,
+        "denominator_universe": "all residents",
+        "categories": {
+          "AIAN": {
+            "population": 19718.8,
+            "share_pct": 0.198
+          },
+          "Asian": {
+            "population": 1265592.2,
+            "share_pct": 12.715
+          },
+          "Black": {
+            "population": 758566.3,
+            "share_pct": 7.621
+          },
+          "Hispanic": {
+            "population": 4153106.3,
+            "share_pct": 41.726
+          },
+          "Other/Unknown": {
+            "population": 1468798.9,
+            "share_pct": 14.757
+          },
+          "White": {
+            "population": 2287502.7,
+            "share_pct": 22.982
+          }
+        },
+        "shares_sum_to_pct": 99.999
+      },
+      "income_decile_shares_2025": {
+        "denominator": 9944607.0,
+        "denominator_universe": "residents with an income record",
+        "categories": {
+          "1": {
+            "population": 919606.3,
+            "share_pct": 9.247
+          },
+          "10": {
+            "population": 1185151.5,
+            "share_pct": 11.918
+          },
+          "2": {
+            "population": 938811.7,
+            "share_pct": 9.44
+          },
+          "3": {
+            "population": 978157.9,
+            "share_pct": 9.836
+          },
+          "4": {
+            "population": 947276.2,
+            "share_pct": 9.526
+          },
+          "5": {
+            "population": 915038.2,
+            "share_pct": 9.201
+          },
+          "6": {
+            "population": 915890.5,
+            "share_pct": 9.21
+          },
+          "7": {
+            "population": 956414.1,
+            "share_pct": 9.617
+          },
+          "8": {
+            "population": 1037351.1,
+            "share_pct": 10.431
+          },
+          "9": {
+            "population": 1150909.6,
+            "share_pct": 11.573
+          }
+        },
+        "shares_sum_to_pct": 99.999,
+        "coverage": {
+          "excluded_category": "0",
+          "all_residents": 9952952.3,
+          "excluded_population": 8345.3,
+          "excluded_pct_of_all_residents": 0.0838,
+          "note": "Shares are of residents with an income record. The remainder have no income record and are outside the decile universe \u2014 they are counted in the population figures elsewhere on the page."
+        }
+      }
+    },
+    "51003": {
+      "name": "Albemarle County, Virginia",
+      "why_this_one": "Mid-sized and locally familiar, so a wrong number is noticeable by eye. The ordinary case that must stay ordinary.",
+      "population": {
+        "total_by_year": {
+          "2000": 68999.2,
+          "2010": 88602.1,
+          "2020": 104047.5,
+          "2024": 109509.7,
+          "2025": 111916.1
+        },
+        "cagr_2000_2025": 0.019535,
+        "measure_comparison_2025": {
+          "postprocessed": 111916.1,
+          "raw": 111896.0,
+          "pct_difference": 0.018
+        }
+      },
+      "age_shares_2025": {
+        "denominator": 111916.1,
+        "denominator_universe": "all residents",
+        "categories": {
+          "19-65": {
+            "population": 65869.4,
+            "share_pct": 58.856
+          },
+          "Missing Age": {
+            "population": 1965.6,
+            "share_pct": 1.756
+          },
+          "Over 65": {
+            "population": 23226.7,
+            "share_pct": 20.754
+          },
+          "Under 18": {
+            "population": 20854.4,
+            "share_pct": 18.634
+          }
+        },
+        "shares_sum_to_pct": 100.0
+      },
+      "race_shares_2025": {
+        "denominator": 111916.1,
+        "denominator_universe": "all residents",
+        "categories": {
+          "AIAN": {
+            "population": 185.0,
+            "share_pct": 0.165
+          },
+          "Asian": {
+            "population": 4600.9,
+            "share_pct": 4.111
+          },
+          "Black": {
+            "population": 9437.9,
+            "share_pct": 8.433
+          },
+          "Hispanic": {
+            "population": 6061.0,
+            "share_pct": 5.416
+          },
+          "Other/Unknown": {
+            "population": 11803.0,
+            "share_pct": 10.546
+          },
+          "White": {
+            "population": 79828.3,
+            "share_pct": 71.329
+          }
+        },
+        "shares_sum_to_pct": 100.0
+      },
+      "income_decile_shares_2025": {
+        "denominator": 112483.3,
+        "denominator_universe": "residents with an income record",
+        "categories": {
+          "1": {
+            "population": 8380.3,
+            "share_pct": 7.45
+          },
+          "10": {
+            "population": 21546.9,
+            "share_pct": 19.156
+          },
+          "2": {
+            "population": 7377.5,
+            "share_pct": 6.559
+          },
+          "3": {
+            "population": 8332.5,
+            "share_pct": 7.408
+          },
+          "4": {
+            "population": 8863.0,
+            "share_pct": 7.879
+          },
+          "5": {
+            "population": 9143.8,
+            "share_pct": 8.129
+          },
+          "6": {
+            "population": 10222.3,
+            "share_pct": 9.088
+          },
+          "7": {
+            "population": 10861.5,
+            "share_pct": 9.656
+          },
+          "8": {
+            "population": 12749.8,
+            "share_pct": 11.335
+          },
+          "9": {
+            "population": 15005.7,
+            "share_pct": 13.34
+          }
+        },
+        "shares_sum_to_pct": 100.0,
+        "coverage": {
+          "excluded_category": "0",
+          "all_residents": 112552.2,
+          "excluded_population": 69.0,
+          "excluded_pct_of_all_residents": 0.0613,
+          "note": "Shares are of residents with an income record. The remainder have no income record and are outside the decile universe \u2014 they are counted in the population figures elsewhere on the page."
+        }
+      }
+    },
+    "51685": {
+      "name": "Manassas Park city, Virginia",
+      "why_this_one": "Small, and an independent city rather than a county \u2014 a form Virginia has 38 of and most pipelines mishandle. Carries an unusually large residual (~25% Other/Unknown race, ~8% Missing Age), so any denominator mistake shows up here first.",
+      "population": {
+        "total_by_year": {
+          "2000": 7830.7,
+          "2010": 11482.1,
+          "2020": 14461.1,
+          "2024": 15038.8,
+          "2025": 16042.4
+        },
+        "cagr_2000_2025": 0.029103,
+        "measure_comparison_2025": {
+          "postprocessed": 16042.4,
+          "raw": 16109.0,
+          "pct_difference": -0.4134
+        }
+      },
+      "age_shares_2025": {
+        "denominator": 16042.4,
+        "denominator_universe": "all residents",
+        "categories": {
+          "19-65": {
+            "population": 9914.5,
+            "share_pct": 61.802
+          },
+          "Missing Age": {
+            "population": 1486.8,
+            "share_pct": 9.268
+          },
+          "Over 65": {
+            "population": 1284.4,
+            "share_pct": 8.006
+          },
+          "Under 18": {
+            "population": 3356.7,
+            "share_pct": 20.924
+          }
+        },
+        "shares_sum_to_pct": 100.0
+      },
+      "race_shares_2025": {
+        "denominator": 16042.4,
+        "denominator_universe": "all residents",
+        "categories": {
+          "AIAN": {
+            "population": 27.6,
+            "share_pct": 0.172
+          },
+          "Asian": {
+            "population": 1598.2,
+            "share_pct": 9.962
+          },
+          "Black": {
+            "population": 1577.7,
+            "share_pct": 9.835
+          },
+          "Hispanic": {
+            "population": 5236.9,
+            "share_pct": 32.644
+          },
+          "Other/Unknown": {
+            "population": 4167.7,
+            "share_pct": 25.979
+          },
+          "White": {
+            "population": 3434.2,
+            "share_pct": 21.407
+          }
+        },
+        "shares_sum_to_pct": 99.999
+      },
+      "income_decile_shares_2025": {
+        "denominator": 16075.3,
+        "denominator_universe": "residents with an income record",
+        "categories": {
+          "1": {
+            "population": 639.1,
+            "share_pct": 3.976
+          },
+          "10": {
+            "population": 1051.1,
+            "share_pct": 6.539
+          },
+          "2": {
+            "population": 1268.5,
+            "share_pct": 7.891
+          },
+          "3": {
+            "population": 1478.3,
+            "share_pct": 9.196
+          },
+          "4": {
+            "population": 1503.3,
+            "share_pct": 9.352
+          },
+          "5": {
+            "population": 1606.1,
+            "share_pct": 9.991
+          },
+          "6": {
+            "population": 1730.9,
+            "share_pct": 10.768
+          },
+          "7": {
+            "population": 2162.5,
+            "share_pct": 13.452
+          },
+          "8": {
+            "population": 2447.5,
+            "share_pct": 15.225
+          },
+          "9": {
+            "population": 2187.8,
+            "share_pct": 13.61
+          }
+        },
+        "shares_sum_to_pct": 100.0,
+        "coverage": {
+          "excluded_category": "0",
+          "all_residents": 16075.3,
+          "excluded_population": null,
+          "excluded_pct_of_all_residents": null,
+          "note": "Shares are of residents with an income record. In this year the source records one for every resident."
+        }
+      }
+    }
+  }
+}

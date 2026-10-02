@@ -1,0 +1,343 @@
+# =============================================================================
+# Population Explorer — what the site shows
+# =============================================================================
+# SINGLE SOURCE OF TRUTH for the explorer. The page builder, the narrative
+# module, and the front end all read this file.
+#
+# This registry does NOT describe the data. gridded-eif's published
+# catalog.json does that, and is fetched at runtime. This file declares which
+# of it the explorer surfaces, how, and with what caveats.
+#
+# Adding a geography, a section, or a dataset should mean editing THIS FILE
+# ONLY. If exposing something new requires touching a module or a component,
+# that is a bug — and `tests/test_registry.py` is written to catch it.
+# =============================================================================
+
+registry_version: 1.0.0
+
+# -----------------------------------------------------------------------------
+# Upstream
+# -----------------------------------------------------------------------------
+upstream:
+  catalog_url: https://d2l6ob0rkxsi9o.cloudfront.net/catalog.json
+  # The derived tree layout this repo knows how to read. gridded-eif publishes
+  # a breaking change alongside the old tree rather than over it, so a bump
+  # here is a deliberate migration, never a silent follow.
+  requires_derived_version: v1
+  # Recorded, not enforced. A MAJOR bump upstream rebuilds every partition and
+  # moves the golden figures; the fixture is what fails, and this is what tells
+  # you why.
+  validated_against_pipeline_version: "1.0.0"
+
+# -----------------------------------------------------------------------------
+# Vintage policy
+# -----------------------------------------------------------------------------
+# The old site set END_YEAR to a preliminary vintage and published it as the
+# headline year with no marking at all.
+vintages:
+  # `latest` — the most recent year available, preliminary or not. Chosen
+  # deliberately: the explorer's job is to describe a place now, and holding
+  # the headline a year back to wait for a final vintage makes every page
+  # stale for the sake of a distinction most readers cannot act on.
+  #
+  # The alternative is `latest_final`, which pins the headline to the newest
+  # non-preliminary year. Switching back is this one line — the resolver reads
+  # the policy, nothing hardcodes a year.
+  headline: latest
+  preliminary: show_unlabeled
+  exclude_years: [1999]        # ~70% administrative completeness vs 85-96% later
+
+# -----------------------------------------------------------------------------
+# Conventions
+# -----------------------------------------------------------------------------
+# These mirror tests/fixtures/golden-figures.json. The fixture holds the
+# numbers; this holds the rules that produced them. They must agree, and
+# test_registry.py asserts that they do.
+conventions:
+  # Every declared group is drawn, in every figure, however small it is: a
+  # reader who finds a group in the table and not in the chart concludes it is
+  # absent. Small groups used to carry a named noise caveat as well; Grant
+  # dropped it on 2026-10-01, so `small_group_caveat` is gone.
+
+  # Maps combine neighboring 0.01-degree cells until a block holds at least
+  # this many people, then draw the block. Chosen over blurring: every block is
+  # a real sum of real cells, so a block reading 400 people contains 400
+  # people, where a blurred cell shows a number nobody counted. Injected noise
+  # falls as the square root of the cells combined, which attacks it exactly
+  # where it lives — in small counts — and leaves dense areas at full
+  # resolution. Blocks differ in size, so maps color by density, never count.
+  # 0 = raw: every cell drawn from its own published count, no grouping.
+  # Grant's call, 2026-10-01, after seeing the grouped maps go blocky. Set a
+  # count here to bring the grouping back.
+  map_min_block_population: 0
+  map_max_aggregation_level: 5
+  measure: n_noise_postprocessed
+  measure_is_deviation_from_source_guide: true
+  uncertainty_band: n_noise
+  # Population partitions (age, race): the residual is a member of the
+  # partition — the person is there, the value is unknown — so it stays in the
+  # denominator and on the page.
+  residuals: include_in_denominator_and_display
+  # Income deciles are the exception, and the exception is categorical rather
+  # than practical. Deciles partition the income DISTRIBUTION into ten
+  # equal-count groups; decile 0 is not an eleventh decile but a resident
+  # outside that universe. It is excluded from the shares and reported as
+  # coverage. Excluding it silently is what the old site did wrong.
+  income_residual: exclude_from_shares_and_report_as_coverage
+  growth: cagr_over_intervals
+
+# -----------------------------------------------------------------------------
+# Geographies that get a place page
+# -----------------------------------------------------------------------------
+# County, state, and metro. Deliberately not PUMA, commuting zone, or ZCTA:
+# upstream computes them, but they are not units a resident recognizes. The
+# trio below is also the set where county-level external data (IRS SOI, BLS)
+# joins cleanly, because CBSAs are defined by OMB as groupings of WHOLE
+# counties.
+# URL SHAPE. Every place lives at /{url_prefix}/{geo_id}/ — a directory with
+# an index.html, not a bare .html file. Three reasons, and these URLs are
+# meant to be cited, so they are settled deliberately:
+#
+#   1. No file extension in the citation. /county/51003/ survives a change of
+#      static host or templating; /county-51003.html bakes an implementation
+#      detail into every link that anyone ever writes down.
+#   2. A trailing-slash URL stays valid if a place later grows sub-pages
+#      (/county/51003/income/). A .html file cannot become a directory.
+#   3. The id is the FIPS code, not a name slug. Slugs collide, and TIGER
+#      renames places between vintages — "Charlottesville, VA Metro Area"
+#      became "Atlanta-Sandy Springs-Roswell" in the 2023 delineation. A code
+#      does not move.
+geographies:
+
+  state:
+    label: State
+    upstream: state
+    url_prefix: state          # /state/51/
+    compare_to: [nation]
+    search_weight: 2
+    # No cell maps at this level. A state holds 53,000 cells at the median and
+    # 208,000 in Texas, and the grid is only built for the levels below. The
+    # page used to fall back to "Map in progress" placeholders, which promised
+    # three figures that were never coming -- worse than not offering them.
+    #
+    # This is now a build-cost choice rather than a legibility one: the
+    # lattice coarsening added for the very large counties would draw Texas at
+    # a fifth of its resolution and read perfectly well. Turning it on needs a
+    # state-level grid build, which is the only missing piece.
+    maps: false
+
+  county:
+    label: County
+    upstream: county
+    url_prefix: county         # /county/51003/
+    nested_in: state
+    compare_to: [state, nation]
+    search_weight: 3
+
+  cbsa:
+    label: Metro area
+    upstream: cbsa
+    url_prefix: metro          # /metro/16820/
+    # Metro names take an article in a sentence: "the Charlottesville, VA
+    # Metro Area was home to...". Titles and headings keep the bare name.
+    prose_article: the
+    compare_to: [peer_size, nation]
+    search_weight: 3
+    # Upstream carries the authoritative caveat text; this records why the
+    # page must show one at all. 16.5M people — 5.2% of the population — live
+    # outside any CBSA, and those cells are excluded rather than snapped.
+    # Snapping once inflated the national CBSA total from 303.7M to 317.3M.
+    # Off since 2026-10-01 (Grant): these are profiles of one place, and the
+    # note only matters to someone summing metros toward a national total.
+    # Turning it back on shows upstream's own caveat text above the tabs.
+    requires_coverage_note: false
+    # A metro has no natural parent: CBSAs cross state lines, and the nation is
+    # too coarse to be interesting. Peers are metros of similar population.
+    peer_set:
+      method: nearest_by_population
+      count: 8
+
+# -----------------------------------------------------------------------------
+# Page sections
+# -----------------------------------------------------------------------------
+# Order here is order on the page. A section names dataset ids, never upstream
+# datasets directly — that indirection is what lets a second income source be
+# added without touching a template.
+# `tab` groups sections into the page's tab strip. The published explorer used
+# three — Population, Race & Ethnicity, Income — with age living inside
+# Population. Same grouping here.
+tabs:
+  - {id: population, label: Population}
+  - {id: race, label: Race & Ethnicity}
+  - {id: income, label: Income}
+
+sections:
+
+  - id: population
+    label: Population
+    tab: population
+    datasets: [population]
+
+  - id: age
+    label: Age
+    tab: population
+    datasets: [age_structure]
+
+  - id: race
+    label: Race and ethnicity
+    tab: race
+    datasets: [race_ethnicity]
+
+  - id: income
+    label: Income
+    tab: income
+    # A LIST, and the page renders every enabled entry in order. Adding
+    # income_soi in phase 07 is appending an id here plus flipping `enabled`
+    # below — no template change, no component change.
+    datasets: [income_composition, income_soi]
+
+# Figures that need data this repo does not build yet. Declared rather than
+# omitted so the page can show the reader what is coming and the work stays
+# visible; each renders as a placeholder until `enabled` flips.
+
+families:
+  income:
+    label: Income
+    disambiguate: >-
+      These describe income two different ways. One is a distributional profile
+      built from where residents fall in the national income distribution; the
+      other is income actually reported on tax returns filed here. They answer
+      different questions and will not match.
+
+datasets:
+
+  population:
+    label: Population
+    enabled: true
+    kind: upstream
+    upstream_dataset: ageracesex
+    geographies: [state, county, cbsa]
+    aggregate_over: [race_ethnicity, age_group, sex]
+
+  age_structure:
+    label: Age
+    enabled: true
+    kind: upstream
+    upstream_dataset: ageracesex
+    geographies: [state, county, cbsa]
+    dimension: age_group
+    residual_category: "Missing Age"
+    # The published explorer's age figure is a trend, not a snapshot: shares of
+    # each group plotted year by year.
+    trend: true
+
+  race_ethnicity:
+    label: Race and ethnicity
+    enabled: true
+    kind: upstream
+    upstream_dataset: ageracesex
+    dimension: race_ethnicity
+    geographies: [state, county, cbsa]
+    residual_category: "Other/Unknown"
+    # The published explorer showed race composition over time as sparklines in
+    # a table. A line chart says the same thing at a size people can read.
+    trend: true
+
+  # --- The income family -----------------------------------------------------
+
+  income_composition:
+    label: Income distribution
+    enabled: true
+    family: income
+    kind: upstream
+    upstream_dataset: raceincome
+    dimension: income_decile
+    geographies: [state, county, cbsa]
+    # NOT `residual_category`: this one is excluded from the shares, not
+    # displayed among them. The page must state the universe and publish the
+    # coverage figure beside the chart.
+    excluded_from_shares: "0"
+    denominator_universe: residents with an income record
+    coverage_disclosure_required: true
+    # The published explorer's second income figure: small multiples, one panel
+    # per racial and ethnic group, each normalized within its own group so the
+    # figure compares the SHAPE of the distributions rather than group sizes.
+    cross_by: race_ethnicity
+    # Naming and framing, settled: this is a distributional profile, not a
+    # measured income. Two places with the same decile mix report the same
+    # figure regardless of local prices or actual earnings.
+    headline_noun: income distribution
+    # What this dataset is allowed to produce. Shares are measured: the count of
+    # residents in each national decile is real data. Dollars are not — the old
+    # site's "average household AGI in X was $263,433" was the county's decile
+    # mix multiplied by NATIONAL decile means, so two places with the same mix
+    # report the same dollar figure regardless of what anyone there earns. The
+    # growth rate was worse: national decile-mean growth reweighted by drift in
+    # local composition, published as though it were local income growth.
+    #
+    # So this dataset emits shares and comparisons only. Dollar figures wait
+    # for income_soi, which measures them. Enforced by
+    # tests/test_registry.py::test_income_composition_never_emits_dollars.
+    emits: [decile_shares, concentration_comparison]
+    must_not_emit:
+      - dollar_amount
+      - dollar_growth_rate
+      - income_rank_against_other_places
+    never_call_it:
+      - average income
+      - median income
+      - household income
+      - average household AGI
+      - income growth
+    # What CAN be said, and it is more informative than a synthetic dollar
+    # figure: the shares are real, so concentration is real.
+    example_claims:
+      - "19% of residents are in the highest national income decile, against 10% nationally."
+      - "Residents are concentrated in the upper half of the national income distribution."
+    caveat: >-
+      This shows how residents are distributed across the national income
+      distribution — what share fall in each tenth of US households. It is not
+      a measure of what people here earn. Two places whose residents are spread
+      the same way across the deciles look identical here even if incomes
+      differ, so it cannot be compared to a dollar figure from any other
+      source.
+    known_gaps:
+      # Recorded here as well as in the fixture, because the page has to be
+      # able to explain a hole in its own chart.
+      - year: 2024
+        category: "0"
+        note: >-
+          The residual category is absent from the 2024 source and present in
+          every other year, 2000 through 2025. Those residents are counted —
+          they fall inside deciles 1 to 10 that year.
+
+  income_soi:
+    label: Reported income
+    # PHASE 07. Present and fully declared so that enabling it is a config
+    # change. tests/test_registry.py resolves this dataset with enabled forced
+    # true and asserts the page spec picks it up with no code path of its own —
+    # that test is the actual contract.
+    enabled: false
+    family: income
+    kind: external
+    source:
+      name: IRS Statistics of Income, county data
+      public: true
+    # County-native. State and metro are exact aggregations, because CBSAs are
+    # groupings of whole counties — this is the property that made county,
+    # state and metro the right trio to support.
+    geographies: [state, county, cbsa]
+    native_geography: county
+    aggregates_to: [state, cbsa]
+    headline_noun: reported income
+    # The only income dataset permitted to state dollars, because it measures
+    # them rather than inferring them from composition.
+    emits: [dollar_amount, dollar_growth_rate, decile_shares]
+    must_not_emit: []
+    caveat: >-
+      Income reported on tax returns filed from this area. Returns are counted
+      where they are filed, which is not always where income is earned.
+    # Upstream figures are derived spatially, by point-in-polygon on grid
+    # cells, while an external county source summed to metro is exact by
+    # definition. The two will differ slightly at metro boundaries.
+    boundary_note_required_for: [cbsa]

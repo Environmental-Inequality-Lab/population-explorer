@@ -1,0 +1,85 @@
+/* VENDORED from gridded-eif (site/css/tokens.css), unmodified.
+   The two products share one brand, so they share one token file rather than
+   two that drift. tests/test_style.py fails if this copy falls out of step
+   with the sibling repo.
+   ---------------------------------------------------------------------- */
+/* ==========================================================================
+   Design tokens — the ONLY file that should need editing to rebrand.
+   Brand values are taken from the Environmental Inequality Lab's
+   population-explorer; structural conventions follow the CEEP site.
+
+   Two rules that keep a rebrand safe:
+     1. No component may hardcode a colour. Everything reads a token.
+     2. Brand colours and DATA colours are separate scales. Changing the brand
+        must never silently change what a chart or a value means.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=League+Gothic&family=Lato:ital,wght@0,300;0,400;0,700;1,400&display=swap');
+
+:root {
+  /* Light only, deliberately. `color-scheme` also keeps form controls and
+     scrollbars light when the OS is set to dark — without it the browser
+     renders native widgets dark against a light page. */
+  color-scheme: light;
+
+  /* ---------- brand ---------- */
+  /* Values taken from population-explorer's styles.css, which is the EIL brand
+     file. Note: an earlier draft used #eb6864 as the accent — that is the
+     Bootstrap "journal" theme default the site happens to sit on, not a brand
+     colour. The brand defines --brand-hover: #A83232. */
+  --brand-deep:      #601215;   /* EIL maroon — header, headings, links */
+  --brand-deep-rgb:  96, 18, 21;
+  --brand-deep-700:  #4a0e10;
+  --brand-deep-050:  #f6eeee;
+  --brand-accent:    #a83232;   /* EIL brand hover — actions, emphasis */
+  --brand-accent-600:#8d2727;
+  --brand-accent-050:#fbefef;
+
+  /* ---------- ink & surface ---------- */
+  --ink:        #222222;        /* brand --text-color */
+  --ink-muted:  #5b6573;
+  --ink-faint:  #8892a0;
+  --surface:        #ffffff;
+  --surface-soft:   #f3f4f6;    /* brand --muted-bg */
+  --surface-tint:   #e9ebef;
+  --surface-inset:  #fafafb;
+  --line:        #e5e7eb;       /* brand --input-border */
+  --line-strong: #cbd2dc;
+
+  /* ---------- data scales — deliberately NOT brand colours ----------
+     A rebrand must not change what a colour means in a chart. These are
+     colourblind-safe and hold up in both themes.                        */
+  --data-1: #2f6f9f;   --data-2: #d1662b;   --data-3: #4f8a5b;
+  --data-4: #8c5aa8;   --data-5: #b0893c;   --data-6: #7a7f88;
+  --data-seq-0: #eef3f8; --data-seq-1: #c5d9e8; --data-seq-2: #93bad4;
+  --data-seq-3: #5f97be; --data-seq-4: #2f6f9f; --data-seq-5: #1a4a70;
+
+  /* ---------- semantic ---------- */
+  --ok:      #2e7d5b;
+  --warn:    #9a6b12;
+  --warn-bg: #fdf6e6;
+  --danger:  #b3261e;
+  --info-bg: #eef3f8;
+
+  /* ---------- typography ---------- */
+  --font-display: 'Anton', 'League Gothic', 'Arial Narrow', sans-serif;
+  --font-body: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --fs-base: 17px;
+  --lh-base: 1.6;
+
+  /* ---------- space & shape ---------- */
+  --wrap: 1180px;
+  --radius:    10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --shadow:    0 1px 2px rgba(20,25,40,.04), 0 8px 24px rgba(20,25,40,.06);
+  --shadow-lg: 0 2px 4px rgba(20,25,40,.05), 0 18px 44px rgba(20,25,40,.10);
+
+  /* ---------- component roles ---------- */
+  --header-bg: var(--brand-deep);
+  --header-fg: #ffffff;
+  --link:       var(--brand-deep);
+  --link-hover: var(--brand-accent-600);
+  --focus-ring: var(--brand-accent);
+}
