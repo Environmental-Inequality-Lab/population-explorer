@@ -377,10 +377,11 @@ def figures_for(
             year = next((d.headline_year for s in page.sections for d in s.datasets
                          if d.id == "population"), None)
             if year:
-                try:
-                    out.grid = grid.cells(geography, geo_id, year)
-                except Exception:  # noqa: BLE001 — no cells is a missing figure, not a failed build
-                    out.grid = None
+                # No try/except. A place with no cells comes back as None and
+                # simply has no map; a grid that cannot be built at all is a
+                # failed build. Swallowing that once let every page build
+                # without maps -- on CI, where the raw source is not cached.
+                out.grid = grid.cells(geography, geo_id, year)
         out.land_km2 = land_km2(page.upstream).get(geo_id)
     for sec in page.sections:
         for ds in sec.datasets:

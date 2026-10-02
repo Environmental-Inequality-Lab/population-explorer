@@ -1430,3 +1430,18 @@ def test_a_metro_name_before_residents_takes_no_article(catalog):
     html = render.page(fig)
     assert "of the Charlottesville, VA Metro Area residents" not in html
     assert "of Charlottesville, VA Metro Area residents" in html
+
+
+def test_a_preliminary_year_reads_the_realtime_file(catalog):
+    """Census publishes a preliminary year as `..._{year}_realtime.parquet`.
+
+    Asking for it by the final name is a 404 -- invisible on a machine with the
+    grid cached, and on a fresh CI runner it once built every page without
+    maps.
+    """
+    from pipeline import grid
+    for dataset, spec in catalog["datasets"].items():
+        for year in spec.get("preliminary_years", ()):
+            assert grid.source(dataset, year).endswith(f"_{year}_realtime.parquet")
+        for year in spec.get("years", ())[-1:]:
+            assert grid.source(dataset, year).endswith(f"_{year}.parquet")
