@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import time
@@ -124,6 +125,31 @@ def _worker(task: tuple[str, str]) -> tuple[str, str, int]:
     return geo, gid, p.stat().st_size
 
 
+def warm(targets: list[tuple[str, str]], catalog: dict) -> None:
+    """Fill every shared cache once, in this process, before workers start.
+
+    On a cold machine (every CI run) four workers otherwise download the same
+    files and build the same grids at once. The writes are safe now -- each is
+    renamed into place -- but the work is wasted four times over, and a 155 MB
+    Census download repeated per worker is the slowest step there is.
+    """
+    from pipeline import basemap, grid, shapes
+    geos = sorted({g for g, _ in targets})
+    for geo in geos:
+        first = next(gid for g, gid in targets if g == geo)
+        # One full page's worth of figures touches every data mirror, the
+        # crosswalk, the grid, the names and the land areas for the geography.
+        figures.figures_for(geo, first, catalog, with_grid=True)
+        shapes._collection(config.registry()["geographies"][geo]["upstream"])
+    if any(g in grid.CELL_GEOGRAPHIES for g in geos):
+        basemap._fetch(basemap.ROAD_FILE)
+        for fips in sorted(place_names("state", catalog)):
+            # A state without a place file simply has no labels; the page
+            # builder handles that, so warming must not fail on it either.
+            with contextlib.suppress(Exception):
+                basemap._fetch(basemap.PLACE_FILE.format(state=fips))
+
+
 def build_many(targets: list[tuple[str, str]], jobs: int) -> list[tuple[str, str, int]]:
     """Pages are independent, so this is embarrassingly parallel.
 
@@ -135,6 +161,7 @@ def build_many(targets: list[tuple[str, str]], jobs: int) -> list[tuple[str, str
     if jobs == 1:
         _worker_init()
         return [_worker(t) for t in targets]
+    warm(targets, config.upstream_catalog())
     with ProcessPoolExecutor(max_workers=jobs, initializer=_worker_init) as pool:
         return list(pool.map(_worker, targets, chunksize=8))
 

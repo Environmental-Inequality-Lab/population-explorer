@@ -12,6 +12,7 @@ and shared by every page.
 from __future__ import annotations
 
 import json
+import os
 from functools import cache
 
 from pipeline import config
@@ -25,7 +26,9 @@ def _collection(geography: str) -> dict:
     local = CACHE / f"boundaries_{geography}.geojson"
     if not local.exists():
         url = config.upstream_catalog()["boundaries"][geography]
-        local.write_bytes(config.fetch_bytes(url))
+        tmp = local.with_name(f"{local.name}.{os.getpid()}.tmp")
+        tmp.write_bytes(config.fetch_bytes(url))
+        os.replace(tmp, local)
     return json.loads(local.read_text())
 
 

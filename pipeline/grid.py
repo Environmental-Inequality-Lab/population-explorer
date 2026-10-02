@@ -100,6 +100,9 @@ def build(geography: str, year: int, *, force: bool = False) -> Path:
 
     con = figures._con()
     xw = _crosswalk(geography)
+    # Built under a per-process name and renamed into place, so a parallel
+    # worker never reads a half-written grid or collides on DuckDB's lock.
+    final, out = out, out.with_name(f"{out.name}.{os.getpid()}.tmp")
     ars, ri = source("ageracesex", year), source("raceincome", year)
     m = figures.MEASURE
 
@@ -139,7 +142,8 @@ def build(geography: str, year: int, *, force: bool = False) -> Path:
           ORDER BY p.geo_id
         ) TO '{out}' (FORMAT parquet, COMPRESSION zstd, ROW_GROUP_SIZE 20000)
     """)
-    return out
+    os.replace(out, final)
+    return final
 
 
 # ---------------------------------------------------------------------------
