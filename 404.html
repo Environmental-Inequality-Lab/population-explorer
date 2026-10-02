@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Population Data Explorer</title><meta name="robots" content="noindex">
+<script>
+(function () {
+  var target = "https://d1buy7btwtov6g.cloudfront.net/", base = "/population-explorer/";
+  var path = location.pathname;
+  if (path.indexOf(base) === 0) path = path.slice(base.length);
+  path = path.replace(/^\/+/, '');
+  location.replace(target + path + location.search + location.hash);
+})();
+</script></head>
+<body><p>This site has moved to <a href="https://d1buy7btwtov6g.cloudfront.net/">https://d1buy7btwtov6g.cloudfront.net/</a>.</p></body></html>
