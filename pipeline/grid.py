@@ -37,6 +37,12 @@ CENSUS_BASE = "https://www2.census.gov/ces/gridded_eif"
 LOCAL_SOURCE_ENV = "GEIF_SOURCE_DIR"
 FILE = {"ageracesex": "gridded_eif_pop_ageracesex_{year}.parquet",
         "raceincome": "gridded_eif_pop_raceincome_{year}.parquet"}
+# A preliminary year comes from Census's "real-time" release, published under
+# its own name -- the same pattern gridded-eif's registry declares as
+# `preliminary_file_pattern`. Asking for 2025 by the final name is a 404, which
+# a machine with a warm cache never sees and a fresh CI runner always does.
+PRELIMINARY_FILE = {"ageracesex": "gridded_eif_pop_ageracesex_{year}_realtime.parquet",
+                    "raceincome": "gridded_eif_pop_raceincome_{year}_realtime.parquet"}
 
 # Latitude and longitude degrees are not the same distance, and the longitude
 # one shrinks toward the poles — so cell area is a function of latitude, not a
@@ -51,7 +57,9 @@ CELL_GEOGRAPHIES = ("county", "cbsa")
 
 
 def source(dataset: str, year: int) -> str:
-    name = FILE[dataset].format(year=year)
+    prelim = year in (config.upstream_catalog().get("datasets", {})
+                      .get(dataset, {}).get("preliminary_years", ()))
+    name = (PRELIMINARY_FILE if prelim else FILE)[dataset].format(year=year)
     local = os.environ.get(LOCAL_SOURCE_ENV)
     if local:
         for candidate in (Path(local) / name, Path(local) / dataset / name):
