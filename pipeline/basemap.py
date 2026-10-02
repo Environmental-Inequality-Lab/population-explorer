@@ -21,8 +21,9 @@ geospatial stack.
 from __future__ import annotations
 
 import io
+import os
+import shutil
 import struct
-import urllib.request
 import zipfile
 from functools import cache
 from pathlib import Path
@@ -82,11 +83,21 @@ def _fetch(rel: str) -> Path:
     if folder.exists():
         return folder
     CACHE.mkdir(exist_ok=True)
-    with urllib.request.urlopen(f"{TIGER}/{rel}", timeout=300) as r:
-        data = r.read()
-    folder.mkdir(parents=True, exist_ok=True)
+    # Through the shared fetch, which retries a dropped connection rather than
+    # unzipping half an archive.
+    data = config.fetch_bytes(f"{TIGER}/{rel}", timeout=300)
+    # Unpacked into a folder of this process's own, then renamed into place.
+    # A folder that merely exists is not a finished one: a parallel worker
+    # used to find it half-unzipped and draw a map with no town labels.
+    tmp = folder.with_name(f"{folder.name}.{os.getpid()}.tmp")
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
     with zipfile.ZipFile(io.BytesIO(data)) as z:
-        z.extractall(folder)
+        z.extractall(tmp)
+    try:
+        os.rename(tmp, folder)
+    except OSError:          # another worker finished first; theirs is complete
+        shutil.rmtree(tmp, ignore_errors=True)
     return folder
 
 

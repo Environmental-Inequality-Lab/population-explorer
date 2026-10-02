@@ -17,6 +17,7 @@ nowhere else. Two rules make that stick:
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from functools import cache
 
@@ -86,9 +87,14 @@ def local(url: str) -> str:
     name = "__".join(url.rsplit("/", 4)[-4:]).replace("part-00.parquet", "") + ".parquet"
     dest = CACHE / name
     if not dest.exists():
+        # Written under a name of this process's own and renamed into place:
+        # parallel workers on a cold cache otherwise race to write the same
+        # file, and DuckDB's write lock fails the second one (it did, on CI).
+        tmp = dest.with_name(f"{dest.name}.{os.getpid()}.tmp")
         _con().execute(
-            f"COPY (SELECT * FROM read_parquet('{url}')) TO '{dest}' (FORMAT parquet)"
+            f"COPY (SELECT * FROM read_parquet('{url}')) TO '{tmp}' (FORMAT parquet)"
         )
+        os.replace(tmp, dest)
     return str(dest)
 
 
